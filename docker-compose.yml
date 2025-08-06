@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Backend Flask API
+  backend:
+    build:
+      context: ./documerge-backend
+      dockerfile: Dockerfile
+    container_name: documerge-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./documerge-backend:/app
+      - backend_data:/app/src/database
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=src/main.py
+      - PYTHONPATH=/app
+      - FLASK_DEBUG=1
+    networks:
+      - documerge-network
+    restart: unless-stopped
+    depends_on: []
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./documerge-frontend
+      dockerfile: Dockerfile
+    container_name: documerge-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./documerge-frontend:/app
+      - /app/node_modules
+      - /app/.pnpm-store
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:5000
+    networks:
+      - documerge-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Optional: Firebase Emulator for local development
+  firebase-emulator:
+    image: node:18-alpine
+    container_name: documerge-firebase-emulator
+    ports:
+      - "9099:9099"  # Auth
+      - "8080:8080"  # Firestore
+      - "9199:9199"  # Storage
+      - "4000:4000"  # UI
+    volumes:
+      - firebase_emulator_data:/firebase/data
+      - ./firebase-emulator-config:/firebase/config
+    working_dir: /firebase
+    command: >
+      sh -c "
+        npm install -g firebase-tools &&
+        firebase emulators:start
+          --only auth,firestore,storage
+          --project demo-project
+          --import /firebase/data
+          --export-on-exit /firebase/data
+      "
+    networks:
+      - documerge-network
+    profiles:
+      - emulator
+
+volumes:
+  backend_data:
+    driver: local
+  firebase_emulator_data:
+    driver: local
+
+networks:
+  documerge-network:
+    driver: bridge 

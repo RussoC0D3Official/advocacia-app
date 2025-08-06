@@ -1,0 +1,43 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: documerge-backend
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/documerge-backend
+        ports:
+        - name: http1
+          containerPort: 5000
+        env:
+        - name: FLASK_ENV
+          value: production
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /app/service-account-key.json
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        volumeMounts:
+        - name: service-account
+          mountPath: /app
+          readOnly: true
+      volumes:
+      - name: service-account
+        secret:
+          secretName: firebase-service-account
+          items:
+          - key: key.json
+            path: service-account-key.json
+
