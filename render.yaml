@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: advocacia-backend
+    env: docker
+    plan: free
+    region: oregon
+    rootDir: documerge-backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: FLASK_APP
+        value: src/main.py
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONPATH
+        value: /app
+      - key: PORT
+        value: 8080
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /app/config/gcs-service-account.json
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: /app/config/projeto-advocacia-tales-firebase-adminsdk-fbsvc-969b4fefcf.json
+      - key: GCS_BUCKET_NAME
+        value: seu-nome-do-bucket  # <-- Substitua aqui
