@@ -14,3 +14,7 @@ python-docx==0.8.11
 sendgrid==6.12.4
 pyotp==2.9.0
 qrcode==8.2
+
+gunicorn
+firebase-admin
+google-cloud-storage

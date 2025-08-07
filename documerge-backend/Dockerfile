@@ -17,18 +17,22 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire project
 COPY . .
 
-# Create database directory
+# Garante que os arquivos .json de credenciais estejam acessíveis
+# (assumindo que já estão dentro da pasta ./config)
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/config/gcs-service-account.json
+ENV FIREBASE_CREDENTIALS_PATH=/app/config/projeto-advocacia-tales-firebase-adminsdk-fbsvc-969b4fefcf.json
+
+# Cria diretório do banco de dados (caso necessário)
 RUN mkdir -p src/database
 
 # Set environment variables
 ENV FLASK_APP=src/main.py
-ENV FLASK_ENV=development
+ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
-ENV FLASK_DEBUG=1
+ENV PORT=8080
 
-# Expose port
-EXPOSE 5000
+# Expose the port Render expects
+EXPOSE 8080
 
-# Run the application
-CMD ["python", "src/main.py"]
-
+# Start Flask using Gunicorn (melhor para produção)
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.main:app"]
