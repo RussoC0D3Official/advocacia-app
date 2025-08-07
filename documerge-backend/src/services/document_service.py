@@ -9,13 +9,13 @@ from src.models.user import db, GeneratedPetition, Question, ThesisQuestionLink,
 
 class DocumentService:
     def __init__(self):
-        self.bucket_name = os.getenv('GCS_BUCKET_NAME', 'advocacia-documents')
+        self.bucket_name = 'documerge-storage'
         self.client = None
         self.bucket = None
         
         # Inicializa cliente GCS se as credenciais estiverem disponíveis
         try:
-            self.client = storage.Client()
+            self.client = storage.Client(project="documerge-api")
             self.bucket = self.client.bucket(self.bucket_name)
         except Exception as e:
             print(f"Aviso: Google Cloud Storage não configurado: {e}")
@@ -323,3 +323,4 @@ class DocumentService:
         except Exception as e:
             raise Exception(f"Erro ao obter arquivo da petição: {str(e)}")
 
+document_service = DocumentService()
