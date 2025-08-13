@@ -29,14 +29,13 @@ import {
   Building,
   BookOpen,
   FileText,
-  Search,
-  ExternalLink
+  Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ClientsPage() {
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -81,7 +80,8 @@ export function ClientsPage() {
           petition_models_count: 2
         }
       ]);
-    } catch (error) {
+    } catch (err) {
+      console.error('Erro ao carregar clientes:', err);
       toast.error('Erro ao carregar clientes');
     } finally {
       setLoading(false);
@@ -110,7 +110,8 @@ export function ClientsPage() {
       setFormData({ name: '', description: '' });
       setIsCreateDialogOpen(false);
       toast.success('Cliente criado com sucesso');
-    } catch (error) {
+    } catch (err) {
+      console.error('Erro ao criar cliente:', err);
       toast.error('Erro ao criar cliente');
     }
   };
@@ -135,7 +136,8 @@ export function ClientsPage() {
       setSelectedClient(null);
       setIsEditDialogOpen(false);
       toast.success('Cliente atualizado com sucesso');
-    } catch (error) {
+    } catch (err) {
+      console.error('Erro ao atualizar cliente:', err);
       toast.error('Erro ao atualizar cliente');
     }
   };
@@ -151,7 +153,8 @@ export function ClientsPage() {
       
       setClients(clients.filter(client => client.id !== clientId));
       toast.success('Cliente excluído com sucesso');
-    } catch (error) {
+    } catch (err) {
+      console.error('Erro ao excluir cliente:', err);
       toast.error('Erro ao excluir cliente');
     }
   };

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, g
-from src.middleware.auth_middleware import require_auth, require_role
+from src.middleware.auth_middleware import require_auth, require_role, require_2fa_verified
 from src.models.user import db, Client, Thesis, PetitionModel, Question, ThesisQuestionLink
 from src.services.document_service import DocumentService
 
@@ -10,6 +10,7 @@ document_service = DocumentService()
 
 @legal_content_bp.route('/clients', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def list_clients():
     """Lista todos os clientes"""
     try:
@@ -24,6 +25,7 @@ def list_clients():
 @legal_content_bp.route('/clients', methods=['POST'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def create_client():
     """Cria um novo cliente"""
     try:
@@ -55,6 +57,7 @@ def create_client():
 @legal_content_bp.route('/clients/<int:client_id>', methods=['PUT'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def update_client(client_id):
     """Atualiza um cliente"""
     try:
@@ -83,6 +86,7 @@ def update_client(client_id):
 @legal_content_bp.route('/clients/<int:client_id>', methods=['DELETE'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def delete_client(client_id):
     """Remove um cliente"""
     try:
@@ -103,6 +107,7 @@ def delete_client(client_id):
 
 @legal_content_bp.route('/clients/<int:client_id>/theses', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def list_theses(client_id):
     """Lista teses de um cliente"""
     try:
@@ -117,6 +122,7 @@ def list_theses(client_id):
 @legal_content_bp.route('/clients/<int:client_id>/theses', methods=['POST'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def create_thesis(client_id):
     """Cria uma nova tese (UC-04)"""
     try:
@@ -170,6 +176,7 @@ def create_thesis(client_id):
 @legal_content_bp.route('/theses/<int:thesis_id>', methods=['PUT'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def update_thesis(thesis_id):
     """Atualiza uma tese"""
     try:
@@ -207,6 +214,7 @@ def update_thesis(thesis_id):
 @legal_content_bp.route('/theses/<int:thesis_id>', methods=['DELETE'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def delete_thesis(thesis_id):
     """Remove uma tese"""
     try:
@@ -231,6 +239,7 @@ def delete_thesis(thesis_id):
 
 @legal_content_bp.route('/clients/<int:client_id>/petition-models', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def list_petition_models(client_id):
     """Lista modelos de petição de um cliente"""
     try:
@@ -245,6 +254,7 @@ def list_petition_models(client_id):
 @legal_content_bp.route('/clients/<int:client_id>/petition-models', methods=['POST'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def create_petition_model(client_id):
     """Cria um novo modelo de petição (UC-05)"""
     try:
@@ -281,6 +291,7 @@ def create_petition_model(client_id):
 @legal_content_bp.route('/petition-models/<int:model_id>', methods=['PUT'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def update_petition_model(model_id):
     """Atualiza um modelo de petição"""
     try:
@@ -309,6 +320,7 @@ def update_petition_model(model_id):
 @legal_content_bp.route('/petition-models/<int:model_id>', methods=['DELETE'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def delete_petition_model(model_id):
     """Remove um modelo de petição"""
     try:
@@ -329,6 +341,7 @@ def delete_petition_model(model_id):
 
 @legal_content_bp.route('/petition-models/<int:model_id>/questions', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def list_questions(model_id):
     """Lista perguntas de um modelo"""
     try:
@@ -343,6 +356,7 @@ def list_questions(model_id):
 @legal_content_bp.route('/petition-models/<int:model_id>/questions', methods=['POST'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def create_question(model_id):
     """Cria uma nova pergunta"""
     try:
@@ -380,6 +394,7 @@ def create_question(model_id):
 @legal_content_bp.route('/questions/<int:question_id>', methods=['PUT'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def update_question(question_id):
     """Atualiza uma pergunta"""
     try:
@@ -410,6 +425,7 @@ def update_question(question_id):
 @legal_content_bp.route('/questions/<int:question_id>', methods=['DELETE'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def delete_question(question_id):
     """Remove uma pergunta"""
     try:
@@ -430,6 +446,7 @@ def delete_question(question_id):
 
 @legal_content_bp.route('/questions/<int:question_id>/thesis-links', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def list_thesis_links(question_id):
     """Lista vinculações de uma pergunta"""
     try:
@@ -444,6 +461,7 @@ def list_thesis_links(question_id):
 @legal_content_bp.route('/questions/<int:question_id>/thesis-links', methods=['POST'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def create_thesis_link(question_id):
     """Cria uma vinculação tese-pergunta (UC-06)"""
     try:
@@ -497,6 +515,7 @@ def create_thesis_link(question_id):
 @legal_content_bp.route('/thesis-links/<int:link_id>', methods=['DELETE'])
 @require_auth
 @require_role('advogado_administrador')
+@require_2fa_verified
 def delete_thesis_link(link_id):
     """Remove uma vinculação"""
     try:

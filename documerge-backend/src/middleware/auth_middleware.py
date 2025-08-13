@@ -89,13 +89,9 @@ def require_2fa_verified(f):
         
         user = g.current_user
         
-        # Se 2FA está habilitado, verifica se foi verificado nesta sessão
+        # Se 2FA está habilitado, verifica sessão válida
         if user.two_factor_enabled:
-            # Verifica se há um custom claim indicando que 2FA foi verificado
-            firebase_token = g.get('firebase_token', {})
-            two_fa_verified = firebase_token.get('two_fa_verified', False)
-            
-            if not two_fa_verified:
+            if not auth_service.has_valid_2fa_session(user.id):
                 return jsonify({
                     'error': 'Verificação 2FA necessária',
                     'requires_2fa': True

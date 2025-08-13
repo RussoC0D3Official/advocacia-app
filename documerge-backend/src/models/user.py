@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 
 db = SQLAlchemy()
 
@@ -14,6 +14,8 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     two_factor_enabled = db.Column(db.Boolean, default=False)
     two_factor_secret = db.Column(db.String(32), nullable=True)
+    must_change_password = db.Column(db.Boolean, default=False)
+    last_password_change = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -29,6 +31,8 @@ class User(db.Model):
             'role': self.role,
             'is_active': self.is_active,
             'two_factor_enabled': self.two_factor_enabled,
+            'must_change_password': self.must_change_password,
+            'last_password_change': self.last_password_change.isoformat() if self.last_password_change else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
@@ -221,4 +225,17 @@ class TwoFactorCode(db.Model):
             'used': self.used,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+class TwoFactorSession(db.Model):
+    __tablename__ = 'two_factor_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    valid_until = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='two_factor_sessions')
+
+    def __repr__(self):
+        return f'<TwoFactorSession user={self.user_id} until={self.valid_until.isoformat()}>'
 
