@@ -24,7 +24,12 @@ class DocumentService:
             os.makedirs(self.local_storage_path, exist_ok=True)
     
     def upload_thesis_file(self, file, client_id, title):
-        """Faz upload de um arquivo de tese"""
+        """Faz upload de um arquivo de tese.
+        Aceita:
+        - file: FileStorage (tem método save) OU
+        - file: caminho str para arquivo local OU
+        - file: file-like (read())
+        """
         try:
             # Gera nome único para o arquivo
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -33,13 +38,28 @@ class DocumentService:
             if self.bucket:
                 # Upload para GCS
                 blob = self.bucket.blob(filename)
-                blob.upload_from_file(file, content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                if hasattr(file, 'read') and not hasattr(file, 'save'):
+                    blob.upload_from_file(file, content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                elif isinstance(file, str) and os.path.exists(file):
+                    with open(file, 'rb') as f:
+                        blob.upload_from_file(f, content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                else:
+                    blob.upload_from_file(file, content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
                 return f"gs://{self.bucket_name}/{filename}"
             else:
                 # Armazenamento local para desenvolvimento
                 local_path = os.path.join(self.local_storage_path, filename)
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
-                file.save(local_path)
+                if hasattr(file, 'save'):
+                    file.save(local_path)
+                elif isinstance(file, str) and os.path.exists(file):
+                    import shutil
+                    shutil.copy2(file, local_path)
+                elif hasattr(file, 'read'):
+                    with open(local_path, 'wb') as f:
+                        f.write(file.read())
+                else:
+                    raise Exception('Tipo de arquivo não suportado para upload')
                 return local_path
                 
         except Exception as e:

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, g, send_file
-from src.middleware.auth_middleware import require_auth, require_role
+from src.middleware.auth_middleware import require_auth, require_role, require_2fa_verified
 from src.models.user import db, PetitionModel, GeneratedPetition
 from src.services.document_service import DocumentService
 
@@ -8,6 +8,7 @@ document_service = DocumentService()
 
 @petitions_bp.route('/generate', methods=['POST'])
 @require_auth
+@require_2fa_verified
 def generate_petition():
     """Gera uma nova petição a partir de formulário (UC-01)"""
     try:
@@ -56,6 +57,7 @@ def generate_petition():
 
 @petitions_bp.route('/<int:petition_id>/content', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def get_petition_content(petition_id):
     """Obtém o conteúdo de uma petição para visualização/edição (UC-02)"""
     try:
@@ -78,6 +80,7 @@ def get_petition_content(petition_id):
 
 @petitions_bp.route('/<int:petition_id>/content', methods=['PUT'])
 @require_auth
+@require_2fa_verified
 def update_petition_content(petition_id):
     """Atualiza o conteúdo de uma petição (UC-02)"""
     try:
@@ -112,6 +115,7 @@ def update_petition_content(petition_id):
 
 @petitions_bp.route('/<int:petition_id>/save', methods=['POST'])
 @require_auth
+@require_2fa_verified
 def save_petition(petition_id):
     """Salva metadados adicionais de uma petição (UC-03)"""
     try:
@@ -147,6 +151,7 @@ def save_petition(petition_id):
 
 @petitions_bp.route('/my-petitions', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def list_my_petitions():
     """Lista petições do usuário atual"""
     try:
@@ -175,6 +180,7 @@ def list_all_petitions():
 
 @petitions_bp.route('/<int:petition_id>/download', methods=['GET'])
 @require_auth
+@require_2fa_verified
 def download_petition(petition_id):
     """Faz download de uma petição"""
     try:
@@ -202,6 +208,7 @@ def download_petition(petition_id):
 
 @petitions_bp.route('/<int:petition_id>', methods=['DELETE'])
 @require_auth
+@require_2fa_verified
 def delete_petition(petition_id):
     """Remove uma petição"""
     try:

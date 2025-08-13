@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify, g
 from src.middleware.auth_middleware import require_auth, require_role
 from src.services.auth_service import AuthService
+from src.models.user import db
+from datetime import datetime
+from firebase_admin import auth as fb_auth
 
 auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
@@ -8,13 +11,14 @@ auth_service = AuthService()
 @auth_bp.route('/login', methods=['POST'])
 @require_auth
 def login():
-    """Endpoint de login - verifica se 2FA é necessário"""
+    """Endpoint de login - verifica se 2FA é necessário e se precisa trocar a senha"""
     try:
         user = g.current_user
         
         response_data = {
             'user': user.to_dict(),
-            'requires_2fa': user.two_factor_enabled
+            'requires_2fa': user.two_factor_enabled,
+            'must_change_password': user.must_change_password
         }
         
         # Se 2FA está habilitado, gera e envia código
@@ -35,7 +39,7 @@ def login():
 @auth_bp.route('/verify-2fa', methods=['POST'])
 @require_auth
 def verify_2fa():
-    """Verifica código 2FA"""
+    """Verifica código 2FA e registra sessão 2FA"""
     try:
         data = request.get_json()
         code = data.get('code')
@@ -50,9 +54,6 @@ def verify_2fa():
         
         if not is_valid:
             return jsonify({'error': 'Código inválido ou expirado'}), 400
-        
-        # Aqui você poderia atualizar o token Firebase com custom claim
-        # indicando que 2FA foi verificado, mas isso requer privilégios admin
         
         return jsonify({
             'message': '2FA verificado com sucesso',
@@ -72,6 +73,34 @@ def get_profile():
         
     except Exception as e:
         return jsonify({'error': f'Erro ao buscar perfil: {str(e)}'}), 500
+
+@auth_bp.route('/change-password', methods=['POST'])
+@require_auth
+def change_password():
+    """Troca a senha do usuário logado (usado no primeiro login)"""
+    try:
+        data = request.get_json()
+        new_password = data.get('new_password')
+        if not new_password or len(new_password) < 6:
+            return jsonify({'error': 'Senha inválida (mínimo 6 caracteres)'}), 400
+        
+        user = g.current_user
+        
+        # Atualiza senha no Firebase
+        updated = auth_service.update_firebase_password(user.firebase_uid, new_password)
+        if not updated:
+            return jsonify({'error': 'Falha ao atualizar senha no Firebase'}), 500
+        
+        # Atualiza flags locais
+        user.must_change_password = False
+        user.last_password_change = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Senha alterada com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Erro ao alterar senha: {str(e)}'}), 500
 
 @auth_bp.route('/enable-2fa', methods=['POST'])
 @require_auth
@@ -110,6 +139,29 @@ def disable_2fa():
         
     except Exception as e:
         return jsonify({'error': f'Erro ao desabilitar 2FA: {str(e)}'}), 500
+
+@auth_bp.route('/users', methods=['POST'])
+@require_auth
+@require_role('advogado_administrador')
+def admin_create_user():
+    """Administrador cria usuário no Firebase e local. Retorna usuário criado.
+    Body: { email, password, display_name, role }
+    """
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        display_name = data.get('display_name')
+        role = data.get('role', 'advogado_redator')
+        
+        if not email or not password:
+            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
+        
+        user = auth_service.create_firebase_user(email, password, display_name, role, must_change_password=True)
+        
+        return jsonify({'message': 'Usuário criado com sucesso', 'user': user.to_dict()}), 201
+    except Exception as e:
+        return jsonify({'error': f'Erro ao criar usuário: {str(e)}'}), 500
 
 @auth_bp.route('/users', methods=['GET'])
 @require_auth
