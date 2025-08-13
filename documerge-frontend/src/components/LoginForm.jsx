@@ -1,15 +1,30 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
-export const LoginForm = ({ onLogin, onRegister, loading, error }) => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export const LoginForm = ({
+  onLogin,
+  onRegister,
+  loading,
+  error,
+  isLogin = true,
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,18 +35,27 @@ export const LoginForm = ({ onLogin, onRegister, loading, error }) => {
     }
   };
 
+  const handleRedirect = () => {
+    if (location.pathname === "/login") {
+      navigate("/register");
+    } else {
+      navigate("/login");
+    }
+  };
+
+  const isLoginPage = location.pathname === "/login";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md rounded-lg shadow-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            {isLogin ? 'Sign in to DocuMerge' : 'Create your account'}
+            {isLoginPage ? "Entrar" : "Criar Conta"}
           </CardTitle>
-          <CardDescription className="text-center">
-            {isLogin 
-              ? 'Enter your email and password to access your documents' 
-              : 'Enter your email and password to create a new account'
-            }
+          <CardDescription className="text-center text-gray-600">
+            {isLoginPage
+              ? "Acesse sua conta com e-mail e senha"
+              : "Preencha os dados para criar sua conta"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -41,7 +65,7 @@ export const LoginForm = ({ onLogin, onRegister, loading, error }) => {
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -49,11 +73,11 @@ export const LoginForm = ({ onLogin, onRegister, loading, error }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -61,39 +85,38 @@ export const LoginForm = ({ onLogin, onRegister, loading, error }) => {
                 minLength={6}
               />
             </div>
-            
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {isLoginPage ? "Entrar" : "Registrar"}
             </Button>
           </form>
 
           <div className="mt-4 text-center">
             <Button
               variant="link"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={handleRedirect}
               disabled={loading}
               className="text-sm"
             >
-              {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
+              {isLoginPage
+                ? "Don't have an account? Sign up"
+                : "Already have an account? Sign in"}
             </Button>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-gray-500">
+            <p>Sistema de Gestão de Petições Jurídicas</p>
+            <p>Suporte a autenticação de dois fatores</p>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 };
-

@@ -18,3 +18,4 @@ qrcode==8.2
 gunicorn
 firebase-admin
 google-cloud-storage
+alembic==1.13.2

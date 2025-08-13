@@ -1,21 +1,31 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth.jsx';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { UsersPage } from './pages/UsersPage';
-import { ClientsPage } from './pages/ClientsPage';
-import { ThesesPage } from './pages/ThesesPage';
-import { PetitionModelsPage } from './pages/PetitionModelsPage';
-import { GeneratePetitionPage } from './pages/GeneratePetitionPage';
-import { PetitionsPage } from './pages/PetitionsPage';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { Layout } from './components/Layout';
-import { Loader2 } from 'lucide-react';
-import { Toaster } from 'sonner';
-import './App.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useAuth, AuthProvider } from "./hooks/useAuth";
+import { HomePage } from "./pages/HomePage";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { UsersPage } from "./pages/UsersPage";
+import { ClientsPage } from "./pages/ClientsPage";
+import { ThesesPage } from "./pages/ThesesPage";
+import { PetitionModelsPage } from "./pages/PetitionModelsPage";
+import { GeneratePetitionPage } from "./pages/GeneratePetitionPage";
+import { PetitionsPage } from "./pages/PetitionsPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Layout } from "./components/Layout";
+import { Loader2 } from "lucide-react";
+import { Toaster } from "sonner";
+import "./App.css";
 
-function App() {
-  const { user, loading, error, login, logout, getIdToken } = useAuth();
+// Autenticação via Firebase
+import { loginUser, registerUser } from "./lib/auth";
+
+function AppRoutes() {
+  const { user, loading, error, logout, getIdToken } = useAuth();
 
   if (loading) {
     return (
@@ -29,79 +39,119 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Toaster position="top-right" />
-        
-        <Routes>
-          {/* Rota de login */}
-          <Route 
-            path="/login" 
-            element={
-              user ? <Navigate to="/dashboard" replace /> : 
-              <LoginPage onLogin={login} loading={loading} error={error} />
-            } 
-          />
-          
-          {/* Rotas protegidas */}
-          <Route 
-            path="/*" 
-            element={
-              <ProtectedRoute user={user}>
-                <Layout user={user} onLogout={logout} getIdToken={getIdToken}>
-                  <Routes>
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    
-                    {/* Rotas para Advogado/Redator */}
-                    <Route path="/generate-petition" element={<GeneratePetitionPage />} />
-                    <Route path="/my-petitions" element={<PetitionsPage />} />
-                    
-                    {/* Rotas para Advogado/Administrador */}
-                    <Route 
-                      path="/users" 
-                      element={
-                        <ProtectedRoute user={user} requiredRole="advogado_administrador">
-                          <UsersPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/clients" 
-                      element={
-                        <ProtectedRoute user={user} requiredRole="advogado_administrador">
-                          <ClientsPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/clients/:clientId/theses" 
-                      element={
-                        <ProtectedRoute user={user} requiredRole="advogado_administrador">
-                          <ThesesPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/clients/:clientId/petition-models" 
-                      element={
-                        <ProtectedRoute user={user} requiredRole="advogado_administrador">
-                          <PetitionModelsPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    
-                    {/* Rota padrão */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  </Routes>
-                </Layout>
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </div>
-    </Router>
+    <Routes>
+      {/* Redirecionar para login se não estiver autenticado */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute user={user}>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Login */}
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to="/" replace />
+          ) : (
+            <LoginPage
+              onLogin={loginUser}
+              onRegister={registerUser}
+              loading={loading}
+              error={error}
+            />
+          )
+        }
+      />
+
+      {/* Rotas protegidas com layout */}
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute user={user}>
+            <Layout user={user} onLogout={logout} getIdToken={getIdToken}>
+              <Routes>
+                <Route path="/dashboard" element={<DashboardPage />} />
+
+                {/* Redator */}
+                <Route path="/generate-petition" element={<GeneratePetitionPage />} />
+                <Route path="/my-petitions" element={<PetitionsPage />} />
+
+                {/* Administrador */}
+                <Route
+                  path="/users"
+                  element={
+                    <ProtectedRoute user={user} requiredRole="advogado_administrador">
+                      <UsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <ProtectedRoute user={user} requiredRole="advogado_administrador">
+                      <RegisterPage
+                        onRegister={registerUser}
+                        loading={loading}
+                        error={error}
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clients"
+                  element={
+                    <ProtectedRoute user={user} requiredRole="advogado_administrador">
+                      <ClientsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clients/:clientId/theses"
+                  element={
+                    <ProtectedRoute user={user} requiredRole="advogado_administrador">
+                      <ThesesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clients/:clientId/petition-models"
+                  element={
+                    <ProtectedRoute user={user} requiredRole="advogado_administrador">
+                      <PetitionModelsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/theses"
+                  element={
+                    <ProtectedRoute user={user} requiredRole="advogado_administrador">
+                      <ThesesPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 
-export default App;
-
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Toaster position="top-right" />
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+}

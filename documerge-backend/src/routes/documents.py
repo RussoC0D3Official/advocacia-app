@@ -1,14 +1,16 @@
 from flask import Blueprint, request, jsonify, send_file
 from src.services.firebase_service import firebase_service
 from src.services.document_service import document_service
-from src.middleware.auth import require_auth, get_current_user
+from src.middleware.auth_middleware import require_auth as require_auth2, require_2fa_verified
+from src.middleware.auth import get_current_user
 import io
 from datetime import datetime
 
 documents_bp = Blueprint('documents', __name__)
 
 @documents_bp.route('/upload', methods=['POST'])
-@require_auth
+@require_auth2
+@require_2fa_verified
 def upload_document():
     """Upload a Word document"""
     user_id = get_current_user()
@@ -43,7 +45,8 @@ def upload_document():
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @documents_bp.route('/list', methods=['GET'])
-@require_auth
+@require_auth2
+@require_2fa_verified
 def list_documents():
     """List user's documents"""
     user_id = get_current_user()
@@ -56,7 +59,8 @@ def list_documents():
         return jsonify({'error': f'Failed to list documents: {str(e)}'}), 500
 
 @documents_bp.route('/merge', methods=['POST'])
-@require_auth
+@require_auth2
+@require_2fa_verified
 def merge_documents():
     """Merge selected documents"""
     user_id = get_current_user()
@@ -93,7 +97,8 @@ def merge_documents():
         return jsonify({'error': f'Merge failed: {str(e)}'}), 500
 
 @documents_bp.route('/download/<path:blob_path>', methods=['GET'])
-@require_auth
+@require_auth2
+@require_2fa_verified
 def download_document(blob_path):
     """Download a document"""
     user_id = get_current_user()

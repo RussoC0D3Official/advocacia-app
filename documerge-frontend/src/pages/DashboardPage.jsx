@@ -11,9 +11,13 @@ import {
   Plus,
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Shield
 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth.jsx';
+import { useAuth } from '../hooks/useAuth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { toast } from 'sonner';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -93,6 +97,21 @@ export function DashboardPage() {
     });
   };
 
+  // Função temporária para atualizar role para administrador
+  const makeUserAdmin = async () => {
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        role: 'advogado_administrador',
+        updated_at: new Date().toISOString()
+      });
+      toast.success('Role atualizada! Faça logout e login novamente.');
+    } catch (error) {
+      console.error('Erro ao atualizar role:', error);
+      toast.error('Erro ao atualizar role');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -101,9 +120,23 @@ export function DashboardPage() {
         <p className="mt-2 text-gray-600">
           Bem-vindo, {user?.display_name || user?.email}
         </p>
-        <Badge variant="outline" className="mt-2">
-          {getRoleName(user?.role)}
-        </Badge>
+        <div className="flex items-center gap-2 mt-2">
+          <Badge variant="outline">
+            {getRoleName(user?.role)}
+          </Badge>
+          {/* Botão temporário para virar admin */}
+          {user?.role !== 'advogado_administrador' && (
+            <Button 
+              onClick={makeUserAdmin}
+              size="sm" 
+              variant="outline"
+              className="text-xs"
+            >
+              <Shield className="h-3 w-3 mr-1" />
+              Virar Admin (Temporário)
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Ações rápidas */}

@@ -1,118 +1,119 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useEffect, useState, useContext, createContext } from "react";
+import {
+  onAuthStateChanged,
+  signOut,
+  getIdToken as firebaseGetIdToken,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../lib/firebase"; // 🔁 db = getFirestore(app)
 
+// Cria contexto
 const AuthContext = createContext();
 
+// Provedor de autenticação
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // agora conterá também `role`
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Escuta mudanças de autenticação
   useEffect(() => {
-    // Verificar se há um usuário logado no localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (err) {
-        localStorage.removeItem('user');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            const profile = userSnap.data();
+            
+            // Verificar campos obrigatórios e corrigir se necessário
+            const needsUpdate = !profile.role || profile.is_active === undefined;
+            
+            if (needsUpdate) {
+              console.log("Usuário precisa de atualização:", { 
+                hasRole: !!profile.role, 
+                hasIsActive: profile.is_active !== undefined 
+              });
+              
+              const updateData = {
+                ...profile,
+                role: profile.role || "advogado_redator",
+                is_active: profile.is_active !== undefined ? profile.is_active : true,
+                display_name: profile.display_name || firebaseUser.displayName || "",
+                updated_at: new Date().toISOString()
+              };
+              
+              await updateDoc(userRef, {
+                role: updateData.role,
+                is_active: updateData.is_active,
+                display_name: updateData.display_name,
+                updated_at: updateData.updated_at
+              });
+              
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                ...updateData
+              });
+            } else {
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                ...profile, // inclui role, display_name, etc
+              });
+            }
+          } else {
+            // Criar documento mínimo para usuário que não existe no Firestore
+            const userData = {
+              display_name: firebaseUser.displayName || "",
+              email: firebaseUser.email,
+              role: "advogado_redator", // Role padrão
+              is_active: true, // Usuário ativo por padrão
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            await setDoc(userRef, userData);
+            
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              ...userData
+            });
+          }
+        } catch (err) {
+          console.error("Erro ao buscar dados do usuário:", err);
+          setError(err);
+        }
+      } else {
+        setUser(null);
       }
-    }
-    setLoading(false);
+
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Simular login para demonstração
-      // Em produção, você faria a requisição para o backend
-      if (email === 'admin@advocacia.com' && password === '123456') {
-        const userData = {
-          id: 1,
-          email: 'admin@advocacia.com',
-          display_name: 'Administrador',
-          role: 'advogado_administrador',
-          is_active: true,
-          two_factor_enabled: true
-        };
-        
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return { success: true };
-      } else if (email === 'redator@advocacia.com' && password === '123456') {
-        const userData = {
-          id: 2,
-          email: 'redator@advocacia.com',
-          display_name: 'João Silva',
-          role: 'advogado_redator',
-          is_active: true,
-          two_factor_enabled: false
-        };
-        
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return { success: true };
-      } else if (email === 'dev@advocacia.com' && password === '123456') {
-        const userData = {
-          id: 3,
-          email: 'dev@advocacia.com',
-          display_name: 'Desenvolvedor',
-          role: 'dev',
-          is_active: true,
-          two_factor_enabled: true
-        };
-        
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return { success: true };
-      } else {
-        throw new Error('Email ou senha inválidos');
-      }
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = async () => {
-    try {
-      setUser(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-    } catch (err) {
-      console.error('Erro no logout:', err);
-    }
+    await signOut(auth);
+    setUser(null);
   };
 
   const getIdToken = async () => {
-    // Em produção, você retornaria o token JWT do usuário
-    return 'mock-jwt-token';
-  };
-
-  const value = {
-    user,
-    loading,
-    error,
-    login,
-    logout,
-    getIdToken
+    const token = await firebaseGetIdToken(auth.currentUser);
+    return token;
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, error, logout, getIdToken }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// Hook para usar o contexto
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 }
-

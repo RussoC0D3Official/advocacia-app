@@ -26,26 +26,37 @@ export function ProtectedRoute({ children, user, requiredRole = null }) {
 }
 
 function checkUserPermission(user, requiredRole) {
-  if (!user || !user.is_active) {
+  console.log('🔒 ProtectedRoute Debug:');
+  console.log('- User:', user);
+  console.log('- User role:', user?.role);
+  console.log('- User is_active:', user?.is_active);
+  console.log('- Required role:', requiredRole);
+  
+  if (!user || user.is_active === false) {
+    console.log('- ❌ User not active or not found');
     return false;
   }
 
   // Dev tem todas as permissões
   if (user.role === 'dev') {
+    console.log('- ✅ Dev user - full access');
     return true;
   }
 
   // Advogado Administrador tem permissões de administração
   if (user.role === 'advogado_administrador' && 
       ['advogado_administrador', 'advogado_redator'].includes(requiredRole)) {
+    console.log('- ✅ Admin user with valid role');
     return true;
   }
 
   // Advogado Redator tem apenas suas próprias permissões
   if (user.role === 'advogado_redator' && requiredRole === 'advogado_redator') {
+    console.log('- ✅ Redator user with matching role');
     return true;
   }
 
+  console.log('- ❌ No matching permissions found');
   return false;
 }
 

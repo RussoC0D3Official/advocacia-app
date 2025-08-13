@@ -89,7 +89,7 @@ export function UsersPage() {
         }
       ]);
     } catch (error) {
-      toast.error('Erro ao carregar usuários');
+      toast.error('Erro ao carregar usuários', error);
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ export function UsersPage() {
       setIsEditDialogOpen(false);
       setSelectedUser(null);
     } catch (error) {
-      toast.error('Erro ao atualizar papel do usuário');
+      toast.error('Erro ao atualizar papel do usuário', error);
     }
   };
 
@@ -156,7 +156,7 @@ export function UsersPage() {
       
       toast.success(`Usuário ${isActive ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
-      toast.error(`Erro ao ${isActive ? 'ativar' : 'desativar'} usuário`);
+      toast.error(`Erro ao ${isActive ? 'ativar' : 'desativar'} usuário`, error);
     }
   };
 

@@ -15,14 +15,6 @@ import {
   DialogTrigger,
 } from '../components/ui/dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../components/ui/table';
-import {
   Tabs,
   TabsContent,
   TabsList,
@@ -37,15 +29,12 @@ import {
 } from '../components/ui/select';
 import { 
   Plus, 
-  Edit, 
   Trash2, 
   FileText,
   Search,
   ArrowLeft,
   HelpCircle,
-  Link as LinkIcon,
-  MoveUp,
-  MoveDown
+  Link as LinkIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,10 +46,10 @@ export function PetitionModelsPage() {
   const [selectedModel, setSelectedModel] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [links, setLinks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModelDialogOpen, setIsCreateModelDialogOpen] = useState(false);
-  const [isEditModelDialogOpen, setIsEditModelDialogOpen] = useState(false);
+  const [_isEditModelDialogOpen, _setIsEditModelDialogOpen] = useState(false);
   const [isCreateQuestionDialogOpen, setIsCreateQuestionDialogOpen] = useState(false);
   const [isCreateLinkDialogOpen, setIsCreateLinkDialogOpen] = useState(false);
   const [modelFormData, setModelFormData] = useState({ name: '', description: '' });
@@ -88,7 +77,7 @@ export function PetitionModelsPage() {
         description: 'Instituição financeira - casos trabalhistas'
       });
     } catch (error) {
-      toast.error('Erro ao carregar cliente');
+      toast.error('Erro ao carregar cliente', error);
     }
   };
 
@@ -113,7 +102,7 @@ export function PetitionModelsPage() {
         }
       ]);
     } catch (error) {
-      toast.error('Erro ao carregar modelos');
+      toast.error('Erro ao carregar modelos', error);
     } finally {
       setLoading(false);
     }
@@ -128,7 +117,7 @@ export function PetitionModelsPage() {
         { id: 3, title: 'Adicional de insalubridade' }
       ]);
     } catch (error) {
-      toast.error('Erro ao carregar teses');
+      toast.error('Erro ao carregar teses', error);
     }
   };
 
@@ -166,7 +155,7 @@ export function PetitionModelsPage() {
         { id: 3, question_id: 3, thesis_id: 3, answer: 'sim' }
       ]);
     } catch (error) {
-      toast.error('Erro ao carregar perguntas');
+      toast.error('Erro ao carregar perguntas', error);
     }
   };
 
@@ -189,7 +178,7 @@ export function PetitionModelsPage() {
       setIsCreateModelDialogOpen(false);
       toast.success('Modelo criado com sucesso');
     } catch (error) {
-      toast.error('Erro ao criar modelo');
+      toast.error('Erro ao criar modelo', error);
     }
   };
 
@@ -211,7 +200,7 @@ export function PetitionModelsPage() {
       setIsCreateQuestionDialogOpen(false);
       toast.success('Pergunta criada com sucesso');
     } catch (error) {
-      toast.error('Erro ao criar pergunta');
+      toast.error('Erro ao criar pergunta', error);
     }
   };
 
@@ -234,7 +223,7 @@ export function PetitionModelsPage() {
       setIsCreateLinkDialogOpen(false);
       toast.success('Vinculação criada com sucesso');
     } catch (error) {
-      toast.error('Erro ao criar vinculação');
+      toast.error('Erro ao criar vinculação', error);
     }
   };
 
@@ -252,7 +241,7 @@ export function PetitionModelsPage() {
       }
       toast.success('Modelo excluído com sucesso');
     } catch (error) {
-      toast.error('Erro ao excluir modelo');
+      toast.error('Erro ao excluir modelo', error);
     }
   };
 
@@ -266,7 +255,7 @@ export function PetitionModelsPage() {
       setLinks(links.filter(l => l.question_id !== questionId));
       toast.success('Pergunta excluída com sucesso');
     } catch (error) {
-      toast.error('Erro ao excluir pergunta');
+      toast.error('Erro ao excluir pergunta', error);
     }
   };
 
@@ -275,7 +264,7 @@ export function PetitionModelsPage() {
       setLinks(links.filter(l => l.id !== linkId));
       toast.success('Vinculação removida com sucesso');
     } catch (error) {
-      toast.error('Erro ao remover vinculação');
+      toast.error('Erro ao remover vinculação', error);
     }
   };
 
@@ -294,9 +283,6 @@ export function PetitionModelsPage() {
     model.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
 
   return (
     <div className="space-y-6">

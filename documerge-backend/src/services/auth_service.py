@@ -6,14 +6,14 @@ from datetime import datetime, timedelta
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from firebase_admin import auth
-from src.models.user import db, User, TwoFactorCode
+from src.models.user import db, User, TwoFactorCode, TwoFactorSession
 
 class AuthService:
     def __init__(self):
         self.sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
         self.from_email = os.getenv('FROM_EMAIL', 'noreply@advocacia.com')
         
-    def create_user(self, firebase_uid, email, display_name=None, role='advogado_redator'):
+    def create_user(self, firebase_uid, email, display_name=None, role='advogado_redator', must_change_password=False, two_factor_enabled=True):
         """Cria um novo usuário no banco de dados local"""
         try:
             # Verifica se o usuário já existe
@@ -26,7 +26,9 @@ class AuthService:
                 firebase_uid=firebase_uid,
                 email=email,
                 display_name=display_name,
-                role=role
+                role=role,
+                must_change_password=must_change_password,
+                two_factor_enabled=two_factor_enabled
             )
             
             db.session.add(user)
@@ -37,6 +39,35 @@ class AuthService:
             db.session.rollback()
             raise e
     
+    def create_firebase_user(self, email, password, display_name=None, role='advogado_redator', must_change_password=True):
+        """Cria usuário no Firebase e no banco local, com flag de troca de senha."""
+        try:
+            fb_user = auth.create_user(
+                email=email,
+                password=password,
+                display_name=display_name,
+                email_verified=False
+            )
+            # Define custom claims com o papel
+            try:
+                auth.set_custom_user_claims(fb_user.uid, {'role': role})
+            except Exception as e:
+                print(f"Falha ao setar claims: {e}")
+# Cria no banco local
+            user = self.create_user(fb_user.uid, email, display_name, role, must_change_password=must_change_password, two_factor_enabled=True)
+            return user
+        except Exception as e:
+            raise e
+
+    def update_firebase_password(self, firebase_uid, new_password):
+        """Atualiza a senha no Firebase."""
+        try:
+            auth.update_user(firebase_uid, password=new_password)
+            return True
+        except Exception as e:
+            print(f"Erro ao atualizar senha no Firebase: {e}")
+            return False
+
     def get_user_by_firebase_uid(self, firebase_uid):
         """Busca usuário pelo Firebase UID"""
         return User.query.filter_by(firebase_uid=firebase_uid).first()
@@ -116,7 +147,7 @@ class AuthService:
             raise e
     
     def verify_2fa_code(self, user_id, code):
-        """Verifica um código 2FA"""
+        """Verifica um código 2FA e cria sessão de 2FA se válido"""
         try:
             # Busca código válido não usado
             two_factor_code = TwoFactorCode.query.filter_by(
@@ -132,6 +163,13 @@ class AuthService:
             
             # Marca como usado
             two_factor_code.used = True
+            
+            # Cria uma sessão de 2FA válida por 12 horas
+            session = TwoFactorSession(
+                user_id=user_id,
+                valid_until=datetime.utcnow() + timedelta(hours=12)
+            )
+            db.session.add(session)
             db.session.commit()
             
             return True
@@ -139,6 +177,16 @@ class AuthService:
             db.session.rollback()
             raise e
     
+    def has_valid_2fa_session(self, user_id):
+        """Verifica se o usuário possui sessão 2FA válida"""
+        try:
+            session = TwoFactorSession.query.filter_by(user_id=user_id).filter(
+                TwoFactorSession.valid_until > datetime.utcnow()
+            ).order_by(TwoFactorSession.valid_until.desc()).first()
+            return session is not None
+        except Exception:
+            return False
+
     def _send_2fa_email(self, to_email, code, display_name):
         """Envia email com código 2FA"""
         if not self.sendgrid_api_key:
